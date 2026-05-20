@@ -21,8 +21,7 @@
 				action       : 'flxpnt_test_connection',
 				nonce        : flxpnt_admin.nonce,
 				api_base_url : $( '#flxpnt_api_base_url' ).val(),
-				api_key      : $( '#flxpnt_api_key' ).val(),
-				api_secret   : $( '#flxpnt_api_secret' ).val()
+				api_token    : $( '#flxpnt_api_token' ).val()
 			}, function( response ) {
 				var cls   = response.success ? 'success' : 'error';
 				var html  = '<div class="notice notice-' + cls + ' inline" style="margin:0;">';

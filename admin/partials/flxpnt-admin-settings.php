@@ -20,25 +20,13 @@
 			</tr>
 			<tr>
 				<th scope="row">
-					<label for="flxpnt_api_key"><?php _e( 'API Key', 'flxpnt' ); ?></label>
+					<label for="flxpnt_api_token"><?php _e( 'API Token', 'flxpnt' ); ?></label>
 				</th>
 				<td>
-					<input type="password" name="flxpnt_api_key" id="flxpnt_api_key"
-						value="<?php echo esc_attr( $api_key ); ?>" class="regular-text" />
+					<input type="password" name="flxpnt_api_token" id="flxpnt_api_token"
+						value="<?php echo esc_attr( $api_token ); ?>" class="regular-text" />
 					<p class="description">
-						<?php _e( 'Your Flxpoint API key (used as the username in Basic Auth).', 'flxpnt' ); ?>
-					</p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row">
-					<label for="flxpnt_api_secret"><?php _e( 'API Secret', 'flxpnt' ); ?></label>
-				</th>
-				<td>
-					<input type="password" name="flxpnt_api_secret" id="flxpnt_api_secret"
-						value="<?php echo esc_attr( $api_secret ); ?>" class="regular-text" />
-					<p class="description">
-						<?php _e( 'Your Flxpoint API secret (used as the password in Basic Auth).', 'flxpnt' ); ?>
+						<?php _e( 'Your Flxpoint API token. Generate it from the Flxpoint admin under Settings → API & EDI.', 'flxpnt' ); ?>
 					</p>
 				</td>
 			</tr>

@@ -31,9 +31,20 @@ class Flxpnt_Admin {
 	}
 
 	public function add_plugin_admin_menu() {
-		add_options_page(
-			__( 'Flxpoint Integration', 'flxpnt' ),
+		add_menu_page(
 			__( 'Flxpoint', 'flxpnt' ),
+			__( 'Flxpoint', 'flxpnt' ),
+			'manage_options',
+			$this->plugin_name,
+			array( $this, 'display_plugin_settings_page' ),
+			'dashicons-admin-generic',
+			56
+		);
+
+		add_submenu_page(
+			$this->plugin_name,
+			__( 'Settings', 'flxpnt' ),
+			__( 'Settings', 'flxpnt' ),
 			'manage_options',
 			$this->plugin_name,
 			array( $this, 'display_plugin_settings_page' )
@@ -42,8 +53,7 @@ class Flxpnt_Admin {
 
 	public function register_settings() {
 		register_setting( 'flxpnt_settings', 'flxpnt_api_base_url' );
-		register_setting( 'flxpnt_settings', 'flxpnt_api_key' );
-		register_setting( 'flxpnt_settings', 'flxpnt_api_secret' );
+		register_setting( 'flxpnt_settings', 'flxpnt_api_token' );
 	}
 
 	public function display_plugin_settings_page() {
@@ -52,8 +62,7 @@ class Flxpnt_Admin {
 		}
 
 		$api_base_url = get_option( 'flxpnt_api_base_url', 'https://api.flxpoint.com' );
-		$api_key      = get_option( 'flxpnt_api_key', '' );
-		$api_secret   = get_option( 'flxpnt_api_secret', '' );
+		$api_token    = get_option( 'flxpnt_api_token', '' );
 
 		$connection_status = get_transient( 'flxpnt_connection_status' );
 
@@ -67,17 +76,16 @@ class Flxpnt_Admin {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized.', 'flxpnt' ) ) );
 		}
 
-		$base_url = isset( $_POST['api_base_url'] ) ? esc_url_raw( trailingslashit( $_POST['api_base_url'] ) ) : '';
-		$api_key  = isset( $_POST['api_key'] ) ? sanitize_text_field( $_POST['api_key'] ) : '';
-		$api_secret = isset( $_POST['api_secret'] ) ? sanitize_text_field( $_POST['api_secret'] ) : '';
+		$base_url  = isset( $_POST['api_base_url'] ) ? esc_url_raw( trailingslashit( $_POST['api_base_url'] ) ) : '';
+		$api_token = isset( $_POST['api_token'] ) ? sanitize_text_field( $_POST['api_token'] ) : '';
 
-		if ( empty( $base_url ) || empty( $api_key ) || empty( $api_secret ) ) {
+		if ( empty( $base_url ) || empty( $api_token ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please fill in all fields.', 'flxpnt' ) ) );
 		}
 
 		$response = wp_remote_get( $base_url . 'products?limit=1', array(
 			'headers' => array(
-				'Authorization' => 'Basic ' . base64_encode( $api_key . ':' . $api_secret ),
+				'Authorization' => 'Bearer ' . $api_token,
 				'Accept'        => 'application/json',
 			),
 			'timeout' => 30,
