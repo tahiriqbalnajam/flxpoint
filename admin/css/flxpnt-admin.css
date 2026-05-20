@@ -1,0 +1,9 @@
+.flxpnt-settings-wrap .spinner {
+	float: none;
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
+.flxpnt-settings-wrap #flxpnt-connection-dynamic {
+	margin-top: 10px;
+}
