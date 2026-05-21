@@ -23,12 +23,7 @@
 				api_base_url : $( '#flxpnt_api_base_url' ).val(),
 				api_token    : $( '#flxpnt_api_token' ).val()
 			}, function( response ) {
-				var cls   = response.success ? 'success' : 'error';
-				var html  = '<div class="notice notice-' + cls + ' inline" style="margin:0;">';
-				html += '<p>' + response.data.message + '</p>';
-				html += '</div>';
-
-				$dynamic.html( html );
+				$dynamic.text( response.data.message || '' );
 			}, 'json' )
 			.always(function() {
 				$btn.prop( 'disabled', false ).text( flxpnt_admin.test_btn );

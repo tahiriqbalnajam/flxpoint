@@ -52,8 +52,12 @@ class Flxpnt_Admin {
 	}
 
 	public function register_settings() {
-		register_setting( 'flxpnt_settings', 'flxpnt_api_base_url' );
-		register_setting( 'flxpnt_settings', 'flxpnt_api_token' );
+		register_setting( 'flxpnt_settings', 'flxpnt_api_base_url', array(
+			'sanitize_callback' => 'esc_url_raw',
+		) );
+		register_setting( 'flxpnt_settings', 'flxpnt_api_token', array(
+			'sanitize_callback' => 'sanitize_text_field',
+		) );
 	}
 
 	public function display_plugin_settings_page() {
@@ -115,8 +119,8 @@ class Flxpnt_Admin {
 		} else {
 			$error_message = sprintf(
 				__( 'Connection failed. HTTP %d: %s', 'flxpnt' ),
-				$status_code,
-				$body
+				(int) $status_code,
+				esc_html( mb_substr( $body, 0, 500 ) )
 			);
 			set_transient( 'flxpnt_connection_status', array(
 				'success' => false,
