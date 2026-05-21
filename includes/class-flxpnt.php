@@ -159,6 +159,8 @@ class Flxpnt {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_settings' );
 		$this->loader->add_action( 'wp_ajax_flxpnt_test_connection', $plugin_admin, 'handle_test_connection' );
+		$this->loader->add_action( 'admin_notices', $plugin_admin, 'display_admin_notices' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'check_db_version' );
 
 	}
 
