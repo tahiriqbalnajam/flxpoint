@@ -19,3 +19,59 @@
 	font-weight: bold;
 	margin-right: 4px;
 }
+
+/* Log table */
+.flxpnt-log-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 12px 0 8px;
+}
+
+.flxpnt-log-filters select,
+.flxpnt-log-filters input[type="text"] {
+	vertical-align: middle;
+}
+
+.flxpnt-log-table .column-image-count {
+	text-align: center;
+}
+
+.flxpnt-log-message {
+	max-width: 300px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.flxpnt-status-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	line-height: 1.6;
+}
+
+.flxpnt-status-success {
+	background: #edfaef;
+	color: #389e0d;
+}
+
+.flxpnt-status-error {
+	background: #fbe9e9;
+	color: #cf1322;
+}
+
+.flxpnt-status-skipped {
+	background: #fff7e6;
+	color: #d48806;
+}
+
+.flxpnt-status-pending {
+	background: #e6f7ff;
+	color: #096dd9;
+}

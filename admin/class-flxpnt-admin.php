@@ -188,6 +188,63 @@ class Flxpnt_Admin {
 			return;
 		}
 
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'flxpnt_sync_logs';
+
+		// Handle clear log action.
+		if ( isset( $_POST['flxpnt_clear_log'] ) && check_admin_referer( 'flxpnt_clear_log' ) ) {
+			$wpdb->query( "TRUNCATE TABLE {$table_name}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			wp_safe_redirect( add_query_arg( 'cleared', '1', remove_query_arg( 'paged' ) ) );
+			exit;
+		}
+
+		$per_page        = 20;
+		$current_page    = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
+		$offset          = ( $current_page - 1 ) * $per_page;
+		$status_filter   = isset( $_GET['flxpnt_status'] ) ? sanitize_text_field( $_GET['flxpnt_status'] ) : '';
+		$entity_filter   = isset( $_GET['flxpnt_entity'] ) ? sanitize_text_field( $_GET['flxpnt_entity'] ) : '';
+		$search_term     = isset( $_GET['s'] ) ? sanitize_text_field( $_GET['s'] ) : '';
+
+		$where = array( '1=1' );
+		$query_args = array();
+
+		if ( ! empty( $status_filter ) ) {
+			$where[]        = 'status = %s';
+			$query_args[]   = $status_filter;
+		}
+
+		if ( ! empty( $entity_filter ) ) {
+			$where[]        = 'entity_type = %s';
+			$query_args[]   = $entity_filter;
+		}
+
+		if ( ! empty( $search_term ) ) {
+			$where[]        = '( sku LIKE %s OR message LIKE %s OR batch_id LIKE %s )';
+			$like           = '%' . $wpdb->esc_like( $search_term ) . '%';
+			$query_args[]   = $like;
+			$query_args[]   = $like;
+			$query_args[]   = $like;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+
+		// Total count.
+		$count_sql   = "SELECT COUNT(*) FROM {$table_name} WHERE {$where_sql}";
+		$total_count = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $query_args ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		// Page of results.
+		$data_sql = "SELECT * FROM {$table_name} WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d";
+		$data_args = array_merge( $query_args, array( $per_page, $offset ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$logs = $wpdb->get_results( $wpdb->prepare( $data_sql, $data_args ) );
+
+		// Distinct values for filter dropdowns.
+		$statuses  = $wpdb->get_col( "SELECT DISTINCT status FROM {$table_name} ORDER BY status" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$entities  = $wpdb->get_col( "SELECT DISTINCT entity_type FROM {$table_name} ORDER BY entity_type" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		$total_pages = ceil( $total_count / $per_page );
+
 		include_once plugin_dir_path( __FILE__ ) . 'partials/flxpnt-admin-log.php';
 	}
 
