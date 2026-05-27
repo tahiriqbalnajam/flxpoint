@@ -17,17 +17,17 @@ class Flxpnt_Admin {
 	}
 
 	public function enqueue_styles() {
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/flxpnt-admin.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/flxpnt-admin.css', array(), $this->version . '.' . filemtime( plugin_dir_path( __FILE__ ) . 'css/flxpnt-admin.css' ), 'all' );
 	}
 
 	public function enqueue_scripts() {
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/flxpnt-admin.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/flxpnt-admin.js', array( 'jquery' ), $this->version . '.' . filemtime( plugin_dir_path( __FILE__ ) . 'js/flxpnt-admin.js' ), false );
 		wp_localize_script( $this->plugin_name, 'flxpnt_admin', array(
-			'ajax_url'    => admin_url( 'admin-ajax.php' ),
-			'nonce'       => wp_create_nonce( 'flxpnt_test_connection' ),
-			'testing'     => __( 'Testing connection...', 'flxpnt' ),
-			'test_btn'    => __( 'Test Connection', 'flxpnt' ),
-			'token_stored' => (bool) get_option( 'flxpnt_api_token_encrypted' ),
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'flxpnt_test_connection' ),
+			'testing'  => __( 'Testing connection...', 'flxpnt' ),
+			'test_btn' => __( 'Test Connection', 'flxpnt' ),
+			'error'    => __( 'A network error occurred. Please try again.', 'flxpnt' ),
 		) );
 	}
 
@@ -75,8 +75,12 @@ class Flxpnt_Admin {
 			'sanitize_callback' => 'esc_url_raw',
 		) );
 		register_setting( 'flxpnt_settings', 'flxpnt_api_token', array(
-			'sanitize_callback' => array( $this, 'migrate_token_on_save' ),
+			'sanitize_callback' => array( $this, 'sanitize_token' ),
 		) );
+	}
+
+	public function sanitize_token( $value ) {
+		return trim( (string) $value );
 	}
 
 	public function display_plugin_settings_page() {
@@ -85,8 +89,8 @@ class Flxpnt_Admin {
 		}
 
 		$api_base_url = get_option( 'flxpnt_api_base_url', 'https://api.flxpoint.com' );
-		$api_token    = '';
-		$token_stored = ( get_option( 'flxpnt_api_token_encrypted' ) !== false );
+		$api_token    = get_option( 'flxpnt_api_token', '' );
+		$token_stored = ! empty( $api_token );
 
 		$connection_status = get_transient( 'flxpnt_connection_status' );
 
@@ -104,19 +108,21 @@ class Flxpnt_Admin {
 		$api_token = isset( $_POST['api_token'] ) ? sanitize_text_field( $_POST['api_token'] ) : '';
 
 		if ( empty( $api_token ) ) {
-			$api_token = $this->decrypt_token();
+			$api_token = get_option( 'flxpnt_api_token', '' );
 		}
 
 		if ( empty( $base_url ) || empty( $api_token ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please fill in all fields.', 'flxpnt' ) ) );
 		}
 
-		$response = wp_remote_get( $base_url . 'products?limit=1', array(
+		$response = wp_remote_get( $base_url, array(
 			'headers' => array(
 				'Authorization' => 'Bearer ' . $api_token,
 				'Accept'        => 'application/json',
 			),
-			'timeout' => 30,
+			'timeout'     => 30,
+			'sslverify'   => false,
+			'user-agent'  => 'Flxpoint-Integration/1.0',
 		) );
 
 		if ( is_wp_error( $response ) ) {
@@ -124,7 +130,10 @@ class Flxpnt_Admin {
 				'success' => false,
 				'message' => $response->get_error_message(),
 			), 60 );
-			wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+			wp_send_json_error( array(
+				'message' => $response->get_error_message(),
+				'url'     => $base_url ,
+			) );
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
@@ -141,11 +150,18 @@ class Flxpnt_Admin {
 				'status_code' => $status_code,
 			) );
 		} else {
-			$error_message = sprintf(
-				__( 'Connection failed. HTTP %d: %s', 'flxpnt' ),
-				(int) $status_code,
-				esc_html( mb_substr( $body, 0, 500 ) )
-			);
+			if ( 401 === (int) $status_code || 403 === (int) $status_code ) {
+				$error_message = sprintf(
+					__( 'Authentication failed (HTTP %d). Please verify your API token is correct and not expired. Generate a new token from Flxpoint admin -> Settings -> API & EDI.', 'flxpnt' ),
+					(int) $status_code
+				);
+			} else {
+				$error_message = sprintf(
+					__( 'Connection failed. HTTP %d: %s', 'flxpnt' ),
+					(int) $status_code,
+					esc_html( mb_substr( $body, 0, 500 ) )
+				);
+			}
 			set_transient( 'flxpnt_connection_status', array(
 				'success' => false,
 				'message' => $error_message,
@@ -153,6 +169,8 @@ class Flxpnt_Admin {
 			wp_send_json_error( array(
 				'message'     => $error_message,
 				'status_code' => $status_code,
+				'url'         => $base_url ,
+				'token_len'   => strlen( $api_token ),
 			) );
 		}
 	}
@@ -216,58 +234,6 @@ class Flxpnt_Admin {
 
 			update_option( 'flxpnt_db_version', $current_version );
 		}
-	}
-
-	public function migrate_token_on_save( $submitted_value ) {
-		$submitted_value = sanitize_text_field( $submitted_value );
-
-		if ( empty( $submitted_value ) ) {
-			return '';
-		}
-
-		$result = $this->encrypt_token( $submitted_value );
-
-		update_option( 'flxpnt_api_token_encrypted', $result['encrypted'] );
-		update_option( 'flxpnt_api_token_iv', $result['iv'] );
-
-		delete_option( 'flxpnt_api_token' );
-
-		return '';
-	}
-
-	private function get_encryption_key() {
-		return hash_hmac( 'sha256', AUTH_KEY, 'flxpnt_encrypt' );
-	}
-
-	private function encrypt_token( $plaintext ) {
-		$key = $this->get_encryption_key();
-		$iv  = openssl_random_pseudo_bytes( 16 );
-		$ciphertext = openssl_encrypt( $plaintext, 'aes-256-cbc', $key, 0, $iv );
-
-		return array(
-			'encrypted' => base64_encode( $ciphertext ),
-			'iv'        => bin2hex( $iv ),
-		);
-	}
-
-	private function decrypt_token() {
-		$encrypted = get_option( 'flxpnt_api_token_encrypted', '' );
-		$iv_hex    = get_option( 'flxpnt_api_token_iv', '' );
-
-		if ( empty( $encrypted ) || empty( $iv_hex ) ) {
-			return '';
-		}
-
-		$key = $this->get_encryption_key();
-		$iv  = hex2bin( $iv_hex );
-
-		if ( false === $iv ) {
-			return '';
-		}
-
-		$plaintext = openssl_decrypt( base64_decode( $encrypted ), 'aes-256-cbc', $key, 0, $iv );
-
-		return ( false === $plaintext ) ? '' : $plaintext;
 	}
 
 }

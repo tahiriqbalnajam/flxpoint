@@ -24,13 +24,15 @@
 				</th>
 				<td>
 					<input type="password" name="flxpnt_api_token" id="flxpnt_api_token"
-						value="" class="regular-text"
-						placeholder="<?php esc_attr_e( 'Enter new token to change', 'flxpnt' ); ?>" />
+						value="<?php echo esc_attr( $api_token ); ?>" class="regular-text"
+						placeholder="<?php esc_attr_e( 'Paste your Flxpoint API token', 'flxpnt' ); ?>" />
 					<p class="description">
 						<?php if ( $token_stored ) : ?>
-							<?php esc_html_e( 'A token is stored. Enter a new value to change it, or leave blank to keep the current token.', 'flxpnt' ); ?>
+							<span class="flxpnt-token-stored">&#10003;</span>
+							<?php esc_html_e( 'Token stored. Enter a new value to change it.', 'flxpnt' ); ?>
 						<?php else : ?>
-							<?php esc_html_e( 'Your Flxpoint API token. Generate it from the Flxpoint admin under Settings → API & EDI.', 'flxpnt' ); ?>
+							<span class="flxpnt-token-missing">&#10007;</span>
+							<?php esc_html_e( 'No token stored yet. Generate one from Flxpoint admin under Settings → API & EDI.', 'flxpnt' ); ?>
 						<?php endif; ?>
 					</p>
 				</td>

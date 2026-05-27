@@ -7,3 +7,15 @@
 .flxpnt-settings-wrap #flxpnt-connection-dynamic {
 	margin-top: 10px;
 }
+
+.flxpnt-token-stored {
+	color: #46b450;
+	font-weight: bold;
+	margin-right: 4px;
+}
+
+.flxpnt-token-missing {
+	color: #dc3232;
+	font-weight: bold;
+	margin-right: 4px;
+}

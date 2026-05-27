@@ -78,6 +78,7 @@ class Flxpnt {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+		$this->define_rest_api_hooks();
 
 	}
 
@@ -122,6 +123,12 @@ class Flxpnt {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-flxpnt-public.php';
 
+
+		/**
+		 * The class responsible for extending the WooCommerce Variations REST API
+		 * with gallery image support.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-flxpnt-variation-gallery.php';
 		$this->loader = new Flxpnt_Loader();
 
 	}
@@ -178,6 +185,47 @@ class Flxpnt {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
+	}
+
+	/**
+	 * Register hooks for WooCommerce REST API extensions.
+	 *
+	 * Only registers when WooCommerce is active.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_rest_api_hooks() {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return;
+		}
+
+		$variation_gallery = new Flxpnt_Variation_Gallery(
+			$this->get_plugin_name(),
+			$this->get_version()
+		);
+
+		$this->loader->add_filter(
+			'woocommerce_rest_product_variation_schema',
+			$variation_gallery,
+			'add_images_to_schema'
+		);
+
+		$this->loader->add_filter(
+			'woocommerce_rest_prepare_product_variation_object',
+			$variation_gallery,
+			'add_images_to_response',
+			10,
+			3
+		);
+
+		$this->loader->add_filter(
+			'woocommerce_rest_pre_insert_product_variation_object',
+			$variation_gallery,
+			'process_variation_images',
+			10,
+			3
+		);
 	}
 
 	/**
